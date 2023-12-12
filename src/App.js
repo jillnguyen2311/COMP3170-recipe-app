@@ -10,6 +10,8 @@ import { Heading, Button } from "@chakra-ui/react";
 import { InventoryContext } from "./data/inventoryContext";
 
 const API_KEYS = [
+  "713e056596124bad8a2507ce713f8620",
+  "e20a584ca9c147a99ad3663dc5ffcf6b",
   "d479cd983a164fc5b23373bbfafb5061",
   "1e12492708034f08939ee5041e2b450f",
   "447f5e20a3d54ff5be4d42d94cc85804",
@@ -26,47 +28,41 @@ export default function App() {
     const storedRecipes = localStorage.getItem("recipes");
     return storedRecipes ? JSON.parse(storedRecipes) : [];
   });
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(null);
   const [recipeIdCounter, setRecipeIdCounter] = useState(0); // Counter for recipe IDs
-  const [loadMoreClicked, setLoadMoreClicked] = useState(false);
 
   useEffect(() => {
-    if (loadMoreClicked) {
-      async function fetchRecipeData() {
-        try {
-          setLoading(true);
-          const response = await fetch(
-            `https://api.spoonacular.com/recipes/random?apiKey=${API_KEYS[apiKeyIndex]}&number=8&page=${page}`
-          );
-          if (!response.ok) {
-            const errorStatus = response.status;
-            if (errorStatus === 402) {
-              switchApiKeyWithDelay();
-            }
+    async function fetchInitialRecipeData() {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `https://api.spoonacular.com/recipes/random?apiKey=${API_KEYS[apiKeyIndex]}&number=8`
+        );
+        if (!response.ok) {
+          const errorStatus = response.status;
+          if (errorStatus === 402) {
+            switchApiKeyWithDelay();
           }
-          const data = await response.json();
-          const newRecipes = data.recipes.map((recipe, index) => ({
-            ...recipe,
-            id: recipeIdCounter + index, // Use the counter for sequential IDs
-          }));
-          setRecipes((prevRecipes) => [...prevRecipes, ...newRecipes]);
-          setRecipeIdCounter((prevCounter) => prevCounter + data.recipes.length); // Update the counter
-          setPage((prevPage) => prevPage + 1);
-          setLoading(false);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          setLoading(false);
         }
-      }
-
-      if (recipes.length === 0 || page > 1) {
-        fetchRecipeData();
-        setLoadMoreClicked(false); // Reset the state after loading more recipes
+        const data = await response.json();
+        const newRecipes = data.recipes.map((recipe, index) => ({
+          ...recipe,
+          id: recipeIdCounter + index, // Use the counter for sequential IDs
+        }));
+        setRecipes(newRecipes);
+        setRecipeIdCounter((prevCounter) => prevCounter + data.recipes.length); // Update the counter
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
       }
     }
-  }, [page, recipes, apiKeyIndex, recipeIdCounter, loadMoreClicked]);
+
+    if (recipes.length === 0) {
+      fetchInitialRecipeData();
+    }
+  }, [recipes.length, apiKeyIndex, recipeIdCounter]);
 
   function addRecipe(recipe) {
     const newRecipes = [...recipes, { ...recipe, id: recipeIdCounter }];
@@ -92,7 +88,8 @@ export default function App() {
   }
 
   function loadMoreRecipes() {
-    setLoadMoreClicked(true);
+    setLoading(true);
+    switchApiKeyWithDelay();
   }
 
   function switchApiKey() {
@@ -103,7 +100,33 @@ export default function App() {
     // Delay switching API key for 30 seconds
     setTimeout(() => {
       switchApiKey();
-    }, 30000);
+      fetchMoreRecipes();
+    }, 6000);
+  }
+
+  async function fetchMoreRecipes() {
+    try {
+      const response = await fetch(
+        `https://api.spoonacular.com/recipes/random?apiKey=${API_KEYS[apiKeyIndex]}&number=8`
+      );
+      if (!response.ok) {
+        const errorStatus = response.status;
+        if (errorStatus === 402) {
+          switchApiKeyWithDelay();
+        }
+      }
+      const data = await response.json();
+      const newRecipes = data.recipes.map((recipe, index) => ({
+        ...recipe,
+        id: recipeIdCounter + index, // Use the counter for sequential IDs
+      }));
+      setRecipes((prevRecipes) => [...prevRecipes, ...newRecipes]);
+      setRecipeIdCounter((prevCounter) => prevCounter + data.recipes.length); // Update the counter
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    }
   }
 
   return (
