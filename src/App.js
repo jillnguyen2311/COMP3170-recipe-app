@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import "./styles.css";
-import Recipe from "./Components/Recipe";
 import RecipeForm from "./Components/RecipeForm";
 import RecipeList from "./Components/RecipeList";
 import AddRecipeForm from "./Components/AddRecipeForm"; // Import the new component
