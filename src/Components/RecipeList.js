@@ -97,9 +97,13 @@ export default function RecipeList() {
         </label>
       </div>
       <div className="products">
-        {filteredRecipes.map((recipe) => (
-          <Recipe key={`recipe-${recipe.id}`} recipe={recipe} />
-        ))}
+        {filteredRecipes.length > 0 ? (
+          filteredRecipes.map((recipe) => (
+            <Recipe key={`recipe-${recipe.id}`} recipe={recipe} />
+          ))
+        ) : (
+          <p>No recipes match the selected criteria.</p>
+        )}
       </div>
     </Box>
   );
