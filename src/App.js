@@ -10,6 +10,7 @@ import { Heading, Button } from "@chakra-ui/react";
 import { InventoryContext } from "./data/inventoryContext";
 
 const API_KEYS = [
+  "1e12492708034f08939ee5041e2b450f",
   "447f5e20a3d54ff5be4d42d94cc85804",
   "f40e22bbc0c64e35b2da72f92aa38837",
   "c1007fe476f342669e8a3ba32c881031",
