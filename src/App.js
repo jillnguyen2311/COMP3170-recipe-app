@@ -10,6 +10,7 @@ import { Heading, Button } from "@chakra-ui/react";
 import { InventoryContext } from "./data/inventoryContext";
 
 const API_KEYS = [
+  "d479cd983a164fc5b23373bbfafb5061",
   "1e12492708034f08939ee5041e2b450f",
   "447f5e20a3d54ff5be4d42d94cc85804",
   "f40e22bbc0c64e35b2da72f92aa38837",
@@ -29,39 +30,43 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(null);
   const [recipeIdCounter, setRecipeIdCounter] = useState(0); // Counter for recipe IDs
+  const [loadMoreClicked, setLoadMoreClicked] = useState(false);
 
   useEffect(() => {
-    async function fetchRecipeData() {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `https://api.spoonacular.com/recipes/random?apiKey=${API_KEYS[apiKeyIndex]}&number=8&page=${page}`
-        );
-        if (!response.ok) {
-          const errorStatus = response.status;
-          if (errorStatus === 402) {
-            switchApiKey();
+    if (loadMoreClicked) {
+      async function fetchRecipeData() {
+        try {
+          setLoading(true);
+          const response = await fetch(
+            `https://api.spoonacular.com/recipes/random?apiKey=${API_KEYS[apiKeyIndex]}&number=8&page=${page}`
+          );
+          if (!response.ok) {
+            const errorStatus = response.status;
+            if (errorStatus === 402) {
+              switchApiKeyWithDelay();
+            }
           }
+          const data = await response.json();
+          const newRecipes = data.recipes.map((recipe, index) => ({
+            ...recipe,
+            id: recipeIdCounter + index, // Use the counter for sequential IDs
+          }));
+          setRecipes((prevRecipes) => [...prevRecipes, ...newRecipes]);
+          setRecipeIdCounter((prevCounter) => prevCounter + data.recipes.length); // Update the counter
+          setPage((prevPage) => prevPage + 1);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          setLoading(false);
         }
-        const data = await response.json();
-        const newRecipes = data.recipes.map((recipe, index) => ({
-          ...recipe,
-          id: recipeIdCounter + index, // Use the counter for sequential IDs
-        }));
-        setRecipes((prevRecipes) => [...prevRecipes, ...newRecipes]);
-        setRecipeIdCounter((prevCounter) => prevCounter + data.recipes.length); // Update the counter
-        setPage((prevPage) => prevPage + 1);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setLoading(false);
+      }
+
+      if (recipes.length === 0 || page > 1) {
+        fetchRecipeData();
+        setLoadMoreClicked(false); // Reset the state after loading more recipes
       }
     }
-
-    if (recipes.length === 0 || page > 1) {
-      fetchRecipeData();
-    }
-  }, [page, recipes, apiKeyIndex, recipeIdCounter]);
+  }, [page, recipes, apiKeyIndex, recipeIdCounter, loadMoreClicked]);
 
   function addRecipe(recipe) {
     const newRecipes = [...recipes, { ...recipe, id: recipeIdCounter }];
@@ -87,11 +92,18 @@ export default function App() {
   }
 
   function loadMoreRecipes() {
-    setPage((prevPage) => prevPage + 1);
+    setLoadMoreClicked(true);
   }
 
   function switchApiKey() {
     setApiKeyIndex((prevIndex) => (prevIndex + 1) % API_KEYS.length);
+  }
+
+  function switchApiKeyWithDelay() {
+    // Delay switching API key for 30 seconds
+    setTimeout(() => {
+      switchApiKey();
+    }, 30000);
   }
 
   return (
